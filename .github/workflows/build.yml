@@ -1,0 +1,84 @@
+name: Android Optimized CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+
+jobs:
+  validate-and-test:
+    name: Validate, Lint, and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout the Repository
+        uses: actions/checkout@v4 # Updated to v4 for Node v20 support
+
+      - name: Set up Java SDK 17
+        uses: actions/setup-java@v4 # Updated to v4 for Node v20 support
+        with:
+          distribution: 'temurin' # Replaced zulu with temurin for stable OpenJDK
+          java-version: '17' # AGP 8.0+ and Gradle 9.x require Java 17
+
+      - name: Validate Gradle Wrapper Checksum
+        uses: gradle/wrapper-validation-action@v1 # Official action for wrapper validation
+
+      - name: Setup Gradle Build Cache and Dependencies
+        uses: gradle/setup-gradle@v3 # The professional Gradle plugin with intelligent caching
+        with:
+          gradle-version: wrapper # Uses the version from gradlew
+          cache-disabled: false # Force enable cache (optional)
+          generate-job-summary: true # Useful for analysis
+
+      - name: Run Lint Checks
+        run: ./gradlew lintDebug
+
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest
+
+  build:
+    name: Build APK and AAB
+    needs: validate-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout the Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java SDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle Build Cache
+        uses: gradle/setup-gradle@v3
+        with:
+          gradle-version: wrapper
+          cache-disabled: false
+          generate-job-summary: true
+
+      - name: Assemble Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Assemble Release AAB (App Bundle)
+        run: ./gradlew bundleRelease
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4 # Updated to v4 for speed and Node v20
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error # Fail if no file found
+
+      - name: Upload Release AAB Artifact
+        uses: actions/upload-artifact@v4 # Updated to v4
+        with:
+          name: app-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error # Fail if no file found
