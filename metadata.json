@@ -1,0 +1,8 @@
+{
+  "name": "Hisn Al Muslim Premium",
+  "description": "أذكار وأدعية من كتاب حصن المسلم - Hisn Al Muslim Premium",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
